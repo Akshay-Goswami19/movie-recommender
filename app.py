@@ -62,6 +62,11 @@ html, body, [class*="css"] {
     padding: 0.75rem 1.2rem !important;
     transition: border-color 0.2s;
 }
+            
+.stTextInput > div > div > input::placeholder {
+    color: #888888 !important; 
+    opacity: 1 !important;     
+}
 .stTextInput > div > div > input:focus {
     border-color: #e50914 !important;
     box-shadow: 0 0 0 3px rgba(229,9,20,0.15) !important;
@@ -321,7 +326,7 @@ col1, col2, col3 = st.columns([5, 2, 1])
 with col1:
     search_query = st.text_input(
         "search",
-        placeholder="🔍  Search for a movie (e.g. The Dark Knight)...",
+        placeholder="🔍  Search for a movie (e.g. Thor, Avenger)...",
         label_visibility="collapsed",
         key="search_input",
     )
