@@ -1,5 +1,9 @@
 import streamlit as st
 import requests
+import os
+import streamlit as st
+import pickle
+
 
 API_URL = "http://localhost:8000"
 
@@ -10,6 +14,17 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+st.write("Files in current directory:", os.listdir())
+with open("df.pkl", "rb") as f:
+    df = pickle.load(f)
+
+st.write("DF shape:", df.shape)
+st.write(df.head())
+with open("indices.pkl", "rb") as f:
+    indices = pickle.load(f)
+
+st.write("Total indices:", len(indices))
+st.write("Sample keys:", list(indices.keys())[:10])
 
 # ---------- CSS ----------
 st.markdown("""
