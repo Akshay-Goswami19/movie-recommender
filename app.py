@@ -1,11 +1,9 @@
-import streamlit as st
-import requests
 import os
 import streamlit as st
-import pickle
+import requests
 
 
-API_URL = "http://localhost:8000"
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 # ---------- Page config ----------
 st.set_page_config(
@@ -14,17 +12,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-st.write("Files in current directory:", os.listdir())
-with open("df.pkl", "rb") as f:
-    df = pickle.load(f)
-
-st.write("DF shape:", df.shape)
-st.write(df.head())
-with open("indices.pkl", "rb") as f:
-    indices = pickle.load(f)
-
-st.write("Total indices:", len(indices))
-st.write("Sample keys:", list(indices.keys())[:10])
 
 # ---------- CSS ----------
 st.markdown("""
@@ -253,22 +240,30 @@ html, body, [class*="css"] {
 """, unsafe_allow_html=True)
 
 
+
 # ---------- Helpers ----------
 def search_movies(query: str):
     try:
-        r = requests.get(f"{API_URL}/movies/search", params={"q": query}, timeout=5)
-        return r.json().get("results", [])
+        # Increased timeout for Render cold-starts
+        r = requests.get(f"{API_URL}/movies/search", params={"q": query}, timeout=60)
+        if r.status_code == 200:
+            return r.json().get("results", [])
+    except requests.exceptions.ConnectionError:
+        st.error(f"Backend unreachable at {API_URL}. Check deployment.")
+    except requests.exceptions.Timeout:
+        st.warning("Backend is waking up. Please try typing again in a few seconds...")
     except Exception:
-        return []
+        pass
+    return []
 
 
 def get_movie_info(title: str):
     try:
-        r = requests.get(f"{API_URL}/movies/info", params={"title": title}, timeout=8)
+        r = requests.get(f"{API_URL}/movies/info", params={"title": title}, timeout=60)
         if r.status_code == 200:
             return r.json()
-    except Exception:
-        pass
+    except Exception as e:
+        st.error(f"Failed to fetch movie info: {e}")
     return None
 
 
@@ -277,12 +272,12 @@ def get_recommendations(title: str, n: int):
         r = requests.get(
             f"{API_URL}/movies/recommend",
             params={"title": title, "n": n},
-            timeout=15,
+            timeout=60,
         )
         if r.status_code == 200:
             return r.json().get("recommendations", [])
-    except Exception:
-        pass
+    except Exception as e:
+        st.error(f"Failed to fetch recommendations: {e}")
     return []
 
 
@@ -357,7 +352,7 @@ st.markdown("---")
 # ---------- Results ----------
 if selected_title and go:
     # Selected movie info
-    with st.spinner("Fetching movie details..."):
+    with st.spinner("Fetching movie details (Backend may take ~50s to wake up if asleep)..."):
         info = get_movie_info(selected_title)
 
     if info:
